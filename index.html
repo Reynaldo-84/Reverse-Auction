@@ -6,9 +6,8 @@
   <title>Reverse Auction Simulation</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    #auction, #instructorPanel { display: none; margin-top: 20px; }
+    #auction { display: none; margin-top: 20px; }
     .bid-entry { margin-bottom: 10px; }
-    .hidden { display: none; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
@@ -19,13 +18,14 @@
 
 <h1>Reverse Auction Simulation</h1>
 
-<div id="loginPanel">
-  <label>Enter your name (students only):</label><br>
+<div id="setupPanel">
+  <label>Enter your name:</label><br>
   <input type="text" id="studentName">
-  <button onclick="registerBidder()">Enter Auction</button><br><br>
-  <label>Instructor Password:</label><br>
-  <input type="password" id="instructorPass">
-  <button onclick="loginInstructor()">Login as Instructor</button>
+  <button onclick="registerBidder()">Join Auction</button><br><br>
+
+  <label>Set Auction Duration (seconds):</label><br>
+  <input type="number" id="auctionTime" value="60">
+  <button onclick="startAuction()">Start Auction</button>
 </div>
 
 <div id="auction">
@@ -42,81 +42,50 @@
   </table>
 </div>
 
-<div id="instructorPanel">
-  <h2>Instructor Panel</h2>
-  <label>Set Auction Duration (seconds):</label>
-  <input type="number" id="auctionTime" value="60">
-  <button onclick="startAuction()">Start Auction</button>
-  <table>
-    <thead>
-      <tr><th>Name</th><th>Bidder Code</th><th>Bid</th><th>Time</th></tr>
-    </thead>
-    <tbody id="fullBidTable"></tbody>
-  </table>
-</div>
-
 <script>
-  let bidders = {}; // name -> code
+  let bidderCode = null;
   let bidLog = [];
   let auctionEndTime = 0;
   let timerInterval;
   let auctionStarted = false;
-  let currentBidderName = null;
 
-  function generateBidderCode() {
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    return "Bidder " + letters[Math.floor(Math.random()*26)] + Math.floor(100 + Math.random()*900);
+  function generateBidderCode(name) {
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return "Bidder " + initials + Math.floor(100 + Math.random()*900);
   }
 
   function registerBidder() {
     const name = document.getElementById('studentName').value.trim();
     if (!name) return alert("Please enter your name.");
-    if (!bidders[name]) bidders[name] = generateBidderCode();
-    currentBidderName = name;
-    document.getElementById('loginPanel').style.display = 'none';
+    if (!bidderCode) bidderCode = generateBidderCode(name);
+    document.getElementById('setupPanel').style.display = 'none';
     document.getElementById('auction').style.display = 'block';
   }
 
-  function loginInstructor() {
-    const pass = document.getElementById('instructorPass').value;
-    if (pass !== 'Simulation2025') return alert("Wrong password.");
-    document.getElementById('loginPanel').style.display = 'none';
-    document.getElementById('instructorPanel').style.display = 'block';
-    updateInstructorTable();
-  }
-
   function submitBid() {
-    const name = currentBidderName;
     const bidInput = document.getElementById('bidValue');
     const bid = parseFloat(bidInput.value);
 
-    if (!name) return alert("You must enter your name and join the auction first.");
     if (!auctionStarted || Date.now() > auctionEndTime) return alert("The auction has not started or is already finished.");
     if (isNaN(bid) || bid <= 0) return alert("Enter a valid positive bid.");
 
-    const code = bidders[name];
     const time = new Date().toLocaleTimeString();
-    bidLog.push({ name, code, bid, time });
+    const entry = { code: bidderCode, bid, time };
 
-    updatePublicTable();
-    updateInstructorTable();
+    let currentLog = JSON.parse(localStorage.getItem('auctionLog') || '[]');
+    currentLog.push(entry);
+    localStorage.setItem('auctionLog', JSON.stringify(currentLog));
+
     bidInput.value = '';
+    updateTable();
   }
 
-  function updatePublicTable() {
+  function updateTable() {
     const tbody = document.getElementById('bidTable');
+    const data = JSON.parse(localStorage.getItem('auctionLog') || '[]');
     tbody.innerHTML = '';
-    bidLog.slice().reverse().forEach(entry => {
+    data.slice().reverse().forEach(entry => {
       const row = `<tr><td>${entry.code}</td><td>${entry.bid}</td><td>${entry.time}</td></tr>`;
-      tbody.innerHTML += row;
-    });
-  }
-
-  function updateInstructorTable() {
-    const tbody = document.getElementById('fullBidTable');
-    tbody.innerHTML = '';
-    bidLog.slice().reverse().forEach(entry => {
-      const row = `<tr><td>${entry.name}</td><td>${entry.code}</td><td>${entry.bid}</td><td>${entry.time}</td></tr>`;
       tbody.innerHTML += row;
     });
   }
@@ -129,6 +98,8 @@
     auctionStarted = true;
     document.getElementById('timer').textContent = `Time remaining: ${seconds}s`;
     document.getElementById('auction').style.display = 'block';
+    localStorage.setItem('auctionLog', JSON.stringify([]));
+    updateTable();
 
     timerInterval = setInterval(() => {
       const remaining = Math.max(0, Math.floor((auctionEndTime - Date.now()) / 1000));
@@ -140,6 +111,8 @@
       }
     }, 1000);
   }
+
+  window.addEventListener('storage', updateTable);
 </script>
 </body>
 </html>
