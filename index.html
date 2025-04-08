@@ -42,7 +42,7 @@
 </div>
 
 <script>
-  let bidderCode = null;
+  let bidderCode = localStorage.getItem('bidderCode');
 
   function generateBidderCode(name) {
     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -52,7 +52,10 @@
   function registerBidder() {
     const name = document.getElementById('studentName').value.trim();
     if (!name) return alert("Please enter your name.");
-    if (!bidderCode) bidderCode = generateBidderCode(name);
+    if (!bidderCode) {
+      bidderCode = generateBidderCode(name);
+      localStorage.setItem('bidderCode', bidderCode);
+    }
     document.getElementById('setupPanel').style.display = 'none';
     document.getElementById('auction').style.display = 'block';
     updateTable();
@@ -93,6 +96,16 @@
   }
 
   window.addEventListener('storage', updateTable);
+
+  // Auto-load bidder view if already registered
+  if (bidderCode) {
+    document.getElementById('setupPanel').style.display = 'none';
+    document.getElementById('auction').style.display = 'block';
+    updateTable();
+  }
+
+  // Auto-refresh the bid table every 5 seconds
+  setInterval(updateTable, 5000);
 </script>
 </body>
 </html>
