@@ -11,7 +11,6 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
-    #timer { font-size: 24px; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -21,15 +20,10 @@
 <div id="setupPanel">
   <label>Enter your name:</label><br>
   <input type="text" id="studentName">
-  <button onclick="registerBidder()">Join Auction</button><br><br>
-
-  <label>Set Auction Duration (seconds):</label><br>
-  <input type="number" id="auctionTime" value="60">
-  <button onclick="startAuction()">Start Auction</button>
+  <button onclick="registerBidder()">Join Auction</button>
 </div>
 
 <div id="auction">
-  <div id="timer">Auction not started</div>
   <div class="bid-entry">
     <input type="number" id="bidValue" placeholder="Enter your bid">
     <button onclick="submitBid()">Submit Bid</button>
@@ -44,8 +38,6 @@
 
 <script>
   let bidderCode = null;
-  let auctionEndTime = 0;
-  let timerInterval;
 
   function generateBidderCode(name) {
     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -59,15 +51,12 @@
     document.getElementById('setupPanel').style.display = 'none';
     document.getElementById('auction').style.display = 'block';
     updateTable();
-    syncAuctionState();
   }
 
   function submitBid() {
     const bidInput = document.getElementById('bidValue');
     const bid = parseFloat(bidInput.value);
-    const endTime = parseInt(localStorage.getItem('auctionEndTime') || '0');
 
-    if (Date.now() > endTime) return alert("The auction has not started or is already finished.");
     if (isNaN(bid) || bid <= 0) return alert("Enter a valid positive bid.");
 
     const time = new Date().toLocaleTimeString();
@@ -91,27 +80,7 @@
     });
   }
 
-  function startAuction() {
-    const seconds = parseInt(document.getElementById('auctionTime').value);
-    if (isNaN(seconds) || seconds <= 0) return alert("Enter a valid number of seconds.");
-
-    const endTime = Date.now() + seconds * 1000;
-    localStorage.setItem('auctionEndTime', endTime);
-    localStorage.setItem('auctionLog', JSON.stringify([]));
-    updateTable();
-    syncAuctionState();
-  }
-
-  function syncAuctionState() {
-    const endTime = parseInt(localStorage.getItem('auctionEndTime') || '0');
-    if (!endTime || Date.now() > endTime) {
-      document.getElementById('timer').textContent = "Auction ended.";
-      return;
-    }
-
-    document.getElementById('auction').style.display = 'block';
-    clearInterval(timerInterval);
-
-    timerInterval = setInterval(() => {
-      const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-      document.getElementById('timer').textContent = `Time remaining: $
+  window.addEventListener('storage', updateTable);
+</script>
+</body>
+</html>
