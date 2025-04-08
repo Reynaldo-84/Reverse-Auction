@@ -61,6 +61,7 @@
   let auctionEndTime = 0;
   let timerInterval;
   let auctionStarted = false;
+  let currentBidderName = null;
 
   function generateBidderCode() {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -71,7 +72,7 @@
     const name = document.getElementById('studentName').value.trim();
     if (!name) return alert("Please enter your name.");
     if (!bidders[name]) bidders[name] = generateBidderCode();
-    sessionStorage.setItem("currentBidder", name);
+    currentBidderName = name;
     document.getElementById('loginPanel').style.display = 'none';
     document.getElementById('auction').style.display = 'block';
   }
@@ -85,7 +86,7 @@
   }
 
   function submitBid() {
-    const name = sessionStorage.getItem("currentBidder");
+    const name = currentBidderName;
     const bidInput = document.getElementById('bidValue');
     const bid = parseFloat(bidInput.value);
 
