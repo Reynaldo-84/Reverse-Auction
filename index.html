@@ -60,6 +60,7 @@
   let bidLog = [];
   let auctionEndTime = 0;
   let timerInterval;
+  let auctionStarted = false;
 
   function generateBidderCode() {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -85,15 +86,20 @@
 
   function submitBid() {
     const name = sessionStorage.getItem("currentBidder");
-    if (!name || Date.now() > auctionEndTime) return;
+    const bidInput = document.getElementById('bidValue');
+    const bid = parseFloat(bidInput.value);
+
+    if (!name) return alert("You must enter your name and join the auction first.");
+    if (!auctionStarted || Date.now() > auctionEndTime) return alert("The auction has not started or is already finished.");
+    if (isNaN(bid) || bid <= 0) return alert("Enter a valid positive bid.");
+
     const code = bidders[name];
-    const bid = parseFloat(document.getElementById('bidValue').value);
-    if (isNaN(bid)) return alert("Enter a valid bid.");
     const time = new Date().toLocaleTimeString();
     bidLog.push({ name, code, bid, time });
+
     updatePublicTable();
     updateInstructorTable();
-    document.getElementById('bidValue').value = '';
+    bidInput.value = '';
   }
 
   function updatePublicTable() {
@@ -116,7 +122,10 @@
 
   function startAuction() {
     const seconds = parseInt(document.getElementById('auctionTime').value);
+    if (isNaN(seconds) || seconds <= 0) return alert("Enter a valid number of seconds.");
+
     auctionEndTime = Date.now() + seconds * 1000;
+    auctionStarted = true;
     document.getElementById('timer').textContent = `Time remaining: ${seconds}s`;
     document.getElementById('auction').style.display = 'block';
 
@@ -125,6 +134,7 @@
       document.getElementById('timer').textContent = `Time remaining: ${remaining}s`;
       if (remaining <= 0) {
         clearInterval(timerInterval);
+        auctionStarted = false;
         document.getElementById('timer').textContent = "Auction ended.";
       }
     }, 1000);
